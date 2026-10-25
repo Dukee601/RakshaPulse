@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.wear.widget.BoxInsetLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        app:boxedEdges="all">
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="RAKSHA SHIELD ACTIVE"
+            android:textColor="#00E676"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvBpm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="74"
+            android:textColor="#FFFFFF"
+            android:textSize="44sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="BPM (NIGHT SENSING)"
+            android:textColor="#8B99AD"
+            android:textSize="8sp" />
+
+        <Button
+            android:id="@+id/btnCancel"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="#FFFFFF"
+            android:text="CANCEL ALARM"
+            android:textColor="#C40049"
+            android:textSize="9sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnManualSos"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:layout_marginTop="4dp"
+            android:backgroundTint="#FF2A85"
+            android:text="112 SOS NOW"
+            android:textColor="#FFFFFF"
+            android:textSize="9sp" />
+
+    </LinearLayout>
+
+</androidx.wear.widget.BoxInsetLayout>

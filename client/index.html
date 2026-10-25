@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <title>RakshaPulse - AI Women Safety Smartwatch & 112 Police Dispatch</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="logo-container">
+      <div class="shield-badge">
+        <i class="fas fa-shield-halved"></i>
+      </div>
+      <div class="logo-text">
+        <h1>RakshaPulse 112</h1>
+        <p>AI Smartwatch Fear Detection & Automated Emergency Police Dispatch</p>
+      </div>
+    </div>
+    <div class="nav-actions">
+      <button id="installPwaBtn" class="btn-header" style="background: linear-gradient(135deg, #ff2a85, #ff5e36); color: #fff; border: none; box-shadow: 0 0 12px rgba(255, 42, 133, 0.4);">
+        <i class="fas fa-download"></i>
+        <span>Install App on Watch / Device</span>
+      </button>
+      <a href="watch.html" target="_blank" class="btn-header btn-secondary">
+        <i class="fas fa-clock"></i>
+        <span>Standalone Watch Mode</span>
+      </a>
+      <a href="police-dashboard.html" target="_blank" class="btn-header btn-police">
+        <i class="fas fa-tower-broadcast"></i>
+        <span>112 Police Radar</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Grid -->
+  <div class="main-container">
+    
+    <!-- LEFT: Smartwatch Hardware Simulation View -->
+    <div class="watch-section">
+      <div class="watch-casing">
+        <div class="strap-top"></div>
+        <div class="strap-bottom"></div>
+        <div class="crown-btn" id="crownBtn" title="Digital Crown (Tap to toggle Screen)"></div>
+        <div class="secondary-btn" id="panicPhysicalBtn" title="Physical SOS Button"></div>
+
+        <!-- AMOLED Round Watch Screen -->
+        <div class="watch-screen" id="watchScreen">
+          
+          <!-- Top Status Bar -->
+          <div class="screen-top">
+            <span class="clock-24h" id="watchClock">23:42:18</span>
+            <div class="night-badge" id="nightBadge">
+              <i class="fas fa-moon"></i>
+              <span id="nightStatusText">NIGHT SHIELD</span>
+            </div>
+            <span><i class="fas fa-location-dot" style="color: #00f2fe;"></i> GPS</span>
+            <span><i class="fas fa-battery-three-quarters" style="color: #00e676;"></i> 89%</span>
+          </div>
+
+          <!-- Main Vitals Center Display -->
+          <div class="vitals-center">
+            <div class="heart-icon" id="heartIcon">
+              <i class="fas fa-heart"></i>
+            </div>
+            <div class="heart-rate-display">
+              <span class="bpm-number" id="bpmDisplay">74</span>
+              <span class="bpm-label">BPM</span>
+            </div>
+
+            <!-- Dynamic ECG Canvas -->
+            <div class="ecg-canvas-container">
+              <canvas id="ecgCanvas" width="220" height="48"></canvas>
+            </div>
+
+            <!-- Fear Status Tag -->
+            <div class="fear-status-tag" id="fearStatusTag">NORMAL VITAL</div>
+          </div>
+
+          <!-- Bottom Metric Stats -->
+          <div class="screen-bottom">
+            <div class="vital-stat">
+              <span id="hrvDisplay">68 ms</span>
+              <span>HRV (RMSSD)</span>
+            </div>
+            <div class="vital-stat">
+              <span id="fearScoreDisplay">0.08</span>
+              <span>FEAR INDEX</span>
+            </div>
+            <div class="vital-stat">
+              <span id="motionDisplay">STILL</span>
+              <span>MOTION</span>
+            </div>
+          </div>
+
+          <!-- 10-Second Countdown Overlay -->
+          <div class="countdown-overlay" id="countdownOverlay">
+            <div class="countdown-title">
+              <i class="fas fa-triangle-exclamation"></i> ACUTE FEAR DETECTED
+            </div>
+            <div style="font-size: 0.68rem; color: #ffb3c6; margin-bottom: 4px;">
+              Night Threat Verified. Connecting 112 Police in:
+            </div>
+            
+            <div class="countdown-circle">
+              <svg width="100" height="100" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="6"/>
+                <circle id="countdownRing" cx="50" cy="50" r="42" fill="none" stroke="#ff2a85" stroke-width="6" 
+                        stroke-dasharray="264" stroke-dashoffset="0" stroke-linecap="round" 
+                        transform="rotate(-90 50 50)"/>
+              </svg>
+              <div style="position: absolute;" class="countdown-number" id="countdownNum">10</div>
+            </div>
+
+            <button class="countdown-cancel-btn" id="cancelCountdownBtn">
+              <i class="fas fa-xmark"></i> CANCEL (FALSE ALARM)
+            </button>
+            <div style="font-size: 0.6rem; color: #8899aa; margin-top: 6px;">
+              Tap to abort before automatic police dispatch
+            </div>
+          </div>
+
+          <!-- Emergency Dispatched Overlay -->
+          <div class="dispatched-overlay" id="dispatchedOverlay">
+            <div class="sos-police-badge">
+              <i class="fas fa-shield-halved"></i> 112 POLICE CONNECTED
+            </div>
+            <div style="font-size: 0.72rem; color: #00e676; font-weight: 700; margin-bottom: 4px;">
+              <i class="fas fa-car-side"></i> <span id="dispatchedPatrolName">PCR Van 14 Dispatched</span>
+            </div>
+            <div style="font-size: 0.65rem; color: #f0f4f8; margin-bottom: 6px;" id="victimLocationAddress">
+              Barakhamba Rd, New Delhi (Accuracy 6m)
+            </div>
+
+            <div class="ai-audio-broadcasting">
+              <i class="fas fa-volume-high"></i>
+              <span>AI Emergency Voice Broadcast Active</span>
+              <div style="display: flex; gap: 2px; align-items: center; margin-left: 4px;">
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+              </div>
+            </div>
+
+            <div style="margin-top: 8px; display: flex; gap: 8px;">
+              <a href="tel:112" class="countdown-cancel-btn" style="background: #00e676; color: #000; text-decoration: none; padding: 6px 12px; font-size: 0.68rem;">
+                <i class="fas fa-phone"></i> Call 112
+              </a>
+              <button class="countdown-cancel-btn" id="resetWatchBtn" style="background: #2a3344; color: #fff; padding: 6px 12px; font-size: 0.68rem;">
+                Reset Standby
+              </button>
+            </div>
+          </div>
+
+        </div> <!-- End watch-screen -->
+      </div> <!-- End watch-casing -->
+
+      <!-- Hardware info card -->
+      <div style="font-size: 0.8rem; color: var(--text-muted); text-align: center;">
+        <i class="fas fa-circle-info"></i> Running in Wear OS High-Definition Emulation Mode. Tap Crown or Buttons to interact.
+      </div>
+    </div> <!-- End watch-section -->
+
+    <!-- RIGHT: Testing & Simulation Console -->
+    <div class="controls-section">
+      
+      <!-- Panel 1: Simulation Scenarios -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i class="fas fa-sliders" style="color: var(--accent-pink);"></i>
+            <span>Biometric Simulation Scenarios (Fear vs Workout)</span>
+          </div>
+          <button id="connectBleBtn" class="btn-secondary" style="font-size: 0.76rem; padding: 6px 12px;">
+            <i class="fab fa-bluetooth-b" style="color: var(--accent-cyan);"></i> Connect Real Watch BLE
+          </button>
+        </div>
+
+        <div class="scenario-grid">
+          <button class="btn-scenario active" id="scenarioNormal">
+            <div class="scenario-name">
+              <span>🟢 Normal Resting State</span>
+            </div>
+            <div class="scenario-desc">
+              HR: ~72 BPM, Normal HRV (65ms), Resting stillness. Status: Safe.
+            </div>
+          </button>
+
+          <button class="btn-scenario" id="scenarioWorkout">
+            <div class="scenario-name">
+              <span>🏃‍♀️ Intense Jogging / Workout</span>
+            </div>
+            <div class="scenario-desc">
+              HR: 140 BPM, high rhythmic step cadence. Model differentiates exercise: NO ALARM.
+            </div>
+          </button>
+
+          <button class="btn-scenario" id="scenarioFearNight">
+            <div class="scenario-name" style="color: #ff334b;">
+              <span>🚨 Acute Fear / Assault Threat (Night)</span>
+            </div>
+            <div class="scenario-desc">
+              HR spikes from 75 to 158 BPM in 5s. HRV plunges to 12ms. Freeze/struggle motion. Triggers 10s Countdown!
+            </div>
+          </button>
+
+          <button class="btn-scenario" id="scenarioFearDay">
+            <div class="scenario-name">
+              <span>☀️ Daytime Fear Spike</span>
+            </div>
+            <div class="scenario-desc">
+              HR spikes at 14:00 (Daylight). Shows 24-hr day logic with discreet prompt.
+            </div>
+          </button>
+        </div>
+
+        <!-- Custom Manual Sliders -->
+        <div class="slider-group">
+          <div class="slider-row">
+            <div class="slider-label">
+              <span>Simulated Heart Rate (BPM)</span>
+              <span class="slider-value" id="bpmSliderVal">74 BPM</span>
+            </div>
+            <input type="range" id="bpmSlider" min="50" max="185" value="74">
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-label">
+              <span>Heart Rate Surge Rate (dHR/dt)</span>
+              <span class="slider-value" id="surgeSliderVal">0.2 BPM/s</span>
+            </div>
+            <input type="range" id="surgeSlider" min="0" max="10" step="0.5" value="0.2">
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-label">
+              <span>Heart Rate Variability (HRV / RMSSD)</span>
+              <span class="slider-value" id="hrvSliderVal">68 ms</span>
+            </div>
+            <input type="range" id="hrvSlider" min="8" max="100" value="68">
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-label">
+              <span>Motion / Accelerometer Pattern</span>
+              <span class="slider-value" id="motionSliderVal">Still / Inactive</span>
+            </div>
+            <input type="range" id="motionSlider" min="0" max="2" step="1" value="0">
+            <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: #6d7d93;">
+              <span>0: Still / Inactive</span>
+              <span>1: Rhythmic Cadence (Running)</span>
+              <span>2: Erratic Struggle / Freeze</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel 2: 24-Hour Time Engine -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i class="fas fa-clock" style="color: var(--accent-yellow);"></i>
+            <span>24-Hour Night Time Evaluation Engine</span>
+          </div>
+          <span style="font-size: 0.78rem; color: var(--accent-cyan);" id="timeEngineModeText">Live Local Time</span>
+        </div>
+
+        <div style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4;">
+          The system checks the 24-hour clock. If acute fear is detected during the high-risk night window 
+          (<strong style="color: #ff71a4;" id="nightRangeLabel">20:00 to 06:00</strong>), the emergency dispatch activates automatically.
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-label">
+            <span>24-Hour Time-Travel Simulator</span>
+            <span class="slider-value" id="timeTravelDisplay">23:42 (Night Danger Window)</span>
+          </div>
+          <input type="range" id="timeSlider" min="0" max="1439" value="1422">
+          <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: #6d7d93;">
+            <span>00:00 (Midnight)</span>
+            <span>06:00 (Dawn)</span>
+            <span>12:00 (Noon)</span>
+            <span>18:00 (Dusk)</span>
+            <span>20:00 (Night Onset)</span>
+            <span>23:59</span>
+          </div>
+        </div>
+
+        <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center;">
+          <button id="resetLiveTimeBtn" class="btn-secondary" style="font-size: 0.75rem; padding: 6px 12px;">
+            <i class="fas fa-arrows-rotate"></i> Sync to Current System Time
+          </button>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">
+            Threshold: Start <strong>20:00</strong> | End <strong>06:00</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel 3: Virtual AI Emergency Speech & Location Broadcast -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i class="fas fa-microchip-ai" style="color: var(--accent-cyan);"></i>
+            <span>Virtual AI Emergency Broadcast (Audio & 112 ERSS Text)</span>
+          </div>
+        </div>
+
+        <div style="background: rgba(0,0,0,0.4); border-radius: 8px; padding: 12px; font-size: 0.8rem; border-left: 3px solid var(--accent-pink); margin-bottom: 10px;">
+          <div style="font-weight: 700; color: #ff5ba0; margin-bottom: 4px;">
+            <i class="fas fa-bullhorn"></i> Virtual AI Emergency Audio Script:
+          </div>
+          <div id="aiVoiceScriptDisplay" style="color: #e0e8f2; font-style: italic;">
+            "EMERGENCY DISTRESS ALERT. This is an automated AI emergency broadcast from RakshaPulse safety system. A woman is in immediate danger at Barakhamba Road, Connaught Place, New Delhi. Physiological panic distress verified with heart rate 158 BPM at 23:42. Dispatch nearest patrolling 112 police unit immediately."
+          </div>
+        </div>
+
+        <div class="audio-status-banner">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-volume-high" style="color: var(--accent-cyan);"></i>
+            <span>Device Speech Synthesizer: <strong>Ready (Web Speech AI)</strong></span>
+          </div>
+          <div class="audio-controls">
+            <button id="testSpeechBtn" class="btn-speak-test">
+              <i class="fas fa-play"></i> Test Voice Out Loud
+            </button>
+          </div>
+        </div>
+
+        <!-- Action Row -->
+        <div class="action-row">
+          <button class="btn-primary" id="manualSosBtn">
+            <i class="fas fa-bell"></i> Instant Manual 112 SOS Trigger
+          </button>
+          <button class="btn-secondary" id="simulateGpsBtn">
+            <i class="fas fa-location-crosshairs"></i> Refresh GPS Pin
+          </button>
+        </div>
+      </div>
+
+      <!-- Panel 4: Real-Time Event & Telemetry Log -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i class="fas fa-terminal" style="color: #00e676;"></i>
+            <span>Live System Telemetry & 112 Gateway Log</span>
+          </div>
+          <button id="clearLogBtn" style="background: none; border: none; color: #55667d; cursor: pointer; font-size: 0.75rem;">Clear</button>
+        </div>
+
+        <div class="terminal-box" id="terminalLog">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+    </div> <!-- End controls-section -->
+
+  </div> <!-- End main-container -->
+
+  <!-- Socket.io -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- App JS -->
+  <script src="app.js"></script>
+</body>
+</html>

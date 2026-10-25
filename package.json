@@ -1,0 +1,26 @@
+{
+  "name": "rakshapulse-women-safety-smartwatch",
+  "version": "1.0.0",
+  "description": "AI-Powered Women Safety System for Digital Wristwatches & 112 Police Emergency Dispatch",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node server/server.js"
+  },
+  "keywords": [
+    "women-safety",
+    "wear-os",
+    "smartwatch",
+    "emergency-response",
+    "erss-112",
+    "heart-rate-monitoring",
+    "fear-detection"
+  ],
+  "author": "RakshaPulse Safety Systems",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1"
+  }
+}

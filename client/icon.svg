@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#240012" />
+      <stop offset="100%" stop-color="#05070a" />
+    </radialGradient>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff2a85" />
+      <stop offset="100%" stop-color="#ff5e36" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)" />
+  <!-- Shield Outline -->
+  <path d="M256 64 C350 110 416 128 416 128 C416 290 348 404 256 448 C164 404 96 290 96 128 C96 128 162 110 256 64 Z" 
+        fill="none" stroke="url(#shieldGrad)" stroke-width="20" stroke-linejoin="round" />
+  <!-- Heart Beat Pulse Line -->
+  <path d="M150 256 L195 256 L215 200 L240 330 L270 170 L295 290 L315 256 L362 256" 
+        fill="none" stroke="#00f2fe" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- 112 Text -->
+  <text x="256" y="390" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-weight="900" font-size="44" fill="#ffffff" text-anchor="middle" letter-spacing="4">112 SOS</text>
+</svg>

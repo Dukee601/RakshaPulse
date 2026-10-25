@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <title>RakshaPulse Watch</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', Roboto, 'Segoe UI', sans-serif;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #000000;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Watch Face Container: Adapts to circular smartwatches and rectangular screens */
+    .watch-face {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      max-width: 480px;
+      max-height: 480px;
+      aspect-ratio: 1 / 1;
+      background-color: #000000;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 22px 16px;
+      overflow: hidden;
+    }
+
+    @media (shape: round) {
+      .watch-face {
+        border-radius: 50%;
+        padding: 30px 20px;
+      }
+    }
+
+    /* Top Status Bar */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: #8b99ad;
+      padding: 0 10px;
+      z-index: 10;
+    }
+
+    .clock-24h {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+    }
+
+    .shield-status-pill {
+      background: rgba(255, 42, 133, 0.2);
+      color: #ff5ba0;
+      border: 1px solid rgba(255, 42, 133, 0.4);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .shield-status-pill.day {
+      background: rgba(255, 179, 0, 0.15);
+      color: #ffca28;
+      border-color: rgba(255, 179, 0, 0.3);
+    }
+
+    /* Center Vitals Hub */
+    .center-vitals {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: auto 0;
+    }
+
+    .heart-pulse-icon {
+      font-size: 2.2rem;
+      color: #ff2a85;
+      animation: heart-beat 1s infinite;
+      margin-bottom: 2px;
+    }
+
+    @keyframes heart-beat {
+      0% { transform: scale(1); }
+      14% { transform: scale(1.22); }
+      28% { transform: scale(1); }
+      42% { transform: scale(1.15); }
+      70% { transform: scale(1); }
+    }
+
+    .bpm-row {
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .bpm-val {
+      font-size: 3.8rem;
+      font-weight: 900;
+      line-height: 1;
+      color: #ffffff;
+      letter-spacing: -1.5px;
+    }
+
+    .bpm-unit {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #8b99ad;
+    }
+
+    /* ECG Canvas */
+    .ecg-wrap {
+      width: 240px;
+      height: 44px;
+      margin: 4px 0;
+    }
+
+    #watchEcgCanvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    .status-badge {
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      padding: 4px 12px;
+      border-radius: 14px;
+      background: rgba(0, 230, 118, 0.15);
+      color: #00e676;
+      border: 1px solid rgba(0, 230, 118, 0.3);
+      text-transform: uppercase;
+      margin-top: 4px;
+      transition: all 0.3s;
+    }
+
+    .status-badge.danger {
+      background: rgba(255, 51, 75, 0.25);
+      color: #ff334b;
+      border-color: #ff334b;
+      box-shadow: 0 0 15px rgba(255, 51, 75, 0.5);
+      animation: alert-pulse 0.7s infinite alternate;
+    }
+
+    @keyframes alert-pulse {
+      from { transform: scale(1); opacity: 1; }
+      to { transform: scale(1.05); opacity: 0.85; }
+    }
+
+    /* Bottom Quick Stats */
+    .bottom-bar {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      font-size: 0.7rem;
+      color: #8b99ad;
+      padding: 0 10px;
+      z-index: 10;
+    }
+
+    .stat-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .stat-col span:first-child {
+      color: #ffffff;
+      font-weight: 800;
+    }
+
+    /* 10s Countdown Fullscreen Screen */
+    .watch-countdown-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(50, 0, 15, 0.98) 0%, rgba(10, 0, 5, 1) 100%);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+      z-index: 100;
+      animation: red-flash 1s infinite alternate;
+    }
+
+    @keyframes red-flash {
+      from { box-shadow: inset 0 0 30px rgba(255, 42, 133, 0.4); }
+      to { box-shadow: inset 0 0 60px rgba(255, 42, 133, 0.9); }
+    }
+
+    .watch-countdown-modal.active {
+      display: flex;
+    }
+
+    .modal-warning-title {
+      font-size: 0.8rem;
+      color: #ff71a4;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .ring-container {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 10px 0;
+    }
+
+    .countdown-digit {
+      position: absolute;
+      font-size: 3.5rem;
+      font-weight: 900;
+      color: #ffffff;
+    }
+
+    .cancel-btn-large {
+      background: #ffffff;
+      color: #d6004c;
+      border: none;
+      border-radius: 24px;
+      padding: 10px 22px;
+      font-size: 0.82rem;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(255, 255, 255, 0.35);
+      margin-top: 10px;
+    }
+
+    .cancel-btn-large:active {
+      transform: scale(0.95);
+    }
+
+    /* Emergency Dispatched Fullscreen Screen */
+    .watch-dispatched-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-align: center;
+      z-index: 110;
+    }
+
+    .watch-dispatched-modal.active {
+      display: flex;
+    }
+
+    .police-112-chip {
+      background: linear-gradient(135deg, #ff0055, #ff334b);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 14px;
+      font-size: 0.8rem;
+      font-weight: 900;
+      margin-bottom: 8px;
+      box-shadow: 0 0 20px rgba(255, 0, 85, 0.6);
+    }
+
+    /* Action Drawer (Swipe up/down) */
+    .test-drawer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(18, 22, 31, 0.95);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding: 12px;
+      transform: translateY(100%);
+      transition: transform 0.3s ease;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .test-drawer.open {
+      transform: translateY(0);
+    }
+
+    .drawer-handle {
+      width: 40px;
+      height: 4px;
+      background: #445063;
+      border-radius: 2px;
+      margin: 0 auto 6px auto;
+      cursor: pointer;
+    }
+
+    .drawer-btn {
+      background: #252e3d;
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .drawer-btn.alert-test {
+      background: #ff2a85;
+      border-color: #ff2a85;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Full-Screen Watch Face Container -->
+  <div class="watch-face" id="watchFace">
+    
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <span class="clock-24h" id="wClock">23:42:15</span>
+      <div class="shield-status-pill" id="wShieldPill">
+        <i class="fas fa-moon"></i>
+        <span id="wShieldText">NIGHT SHIELD</span>
+      </div>
+      <span><i class="fas fa-location-dot" style="color: #00f2fe;"></i> GPS</span>
+      <span><i class="fas fa-battery-three-quarters" style="color: #00e676;"></i> 91%</span>
+    </div>
+
+    <!-- Center Vitals Area -->
+    <div class="center-vitals" id="tapVitalsArea" title="Tap to toggle test menu">
+      <div class="heart-pulse-icon" id="wHeartIcon">
+        <i class="fas fa-heart"></i>
+      </div>
+      <div class="bpm-row">
+        <span class="bpm-val" id="wBpmVal">74</span>
+        <span class="bpm-unit">BPM</span>
+      </div>
+
+      <!-- ECG Waveform Canvas -->
+      <div class="ecg-wrap">
+        <canvas id="watchEcgCanvas" width="240" height="44"></canvas>
+      </div>
+
+      <div class="status-badge" id="wStatusBadge">NORMAL VITAL</div>
+    </div>
+
+    <!-- Bottom Bar -->
+    <div class="bottom-bar">
+      <div class="stat-col">
+        <span id="wHrvVal">68 ms</span>
+        <span style="font-size: 0.6rem;">HRV</span>
+      </div>
+      <div class="stat-col">
+        <span id="wFearVal">0.08</span>
+        <span style="font-size: 0.6rem;">FEAR INDEX</span>
+      </div>
+      <div class="stat-col">
+        <span id="wMotionVal">STILL</span>
+        <span style="font-size: 0.6rem;">MOTION</span>
+      </div>
+    </div>
+
+    <!-- 10-Second Countdown Overlay -->
+    <div class="watch-countdown-modal" id="wCountdownModal">
+      <div class="modal-warning-title">
+        <i class="fas fa-triangle-exclamation"></i> ACUTE FEAR SPIKE
+      </div>
+      <div style="font-size: 0.72rem; color: #ffb3c6;">
+        Night threat verified. Dispatching 112 Police in:
+      </div>
+
+      <div class="ring-container">
+        <svg width="120" height="120" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="8"/>
+          <circle id="wCountdownRing" cx="60" cy="60" r="50" fill="none" stroke="#ff2a85" stroke-width="8" 
+                  stroke-dasharray="314" stroke-dashoffset="0" stroke-linecap="round" 
+                  transform="rotate(-90 60 60)"/>
+        </svg>
+        <div class="countdown-digit" id="wCountdownDigit">10</div>
+      </div>
+
+      <button class="cancel-btn-large" id="wCancelBtn">
+        <i class="fas fa-xmark"></i> CANCEL (SAFE)
+      </button>
+      <div style="font-size: 0.65rem; color: #8899aa; margin-top: 8px;">
+        Tap to abort false alarm
+      </div>
+    </div>
+
+    <!-- Emergency Dispatched Overlay -->
+    <div class="watch-dispatched-modal" id="wDispatchedModal">
+      <div class="police-112-chip">
+        <i class="fas fa-shield-halved"></i> 112 POLICE CONNECTED
+      </div>
+      <div style="font-size: 0.78rem; color: #00e676; font-weight: 800; margin-bottom: 4px;" id="wDispatchedPatrol">
+        <i class="fas fa-car-side"></i> PCR Van 14 Dispatched (2m)
+      </div>
+      <div style="font-size: 0.68rem; color: #f0f4f8; margin-bottom: 8px;" id="wLocationText">
+        Barakhamba Rd, New Delhi (Accuracy 6m)
+      </div>
+      <div style="font-size: 0.7rem; color: #00f2fe; margin-bottom: 12px;">
+        <i class="fas fa-volume-high"></i> AI Emergency Voice Active
+      </div>
+      
+      <div style="display: flex; gap: 8px;">
+        <a href="tel:112" class="cancel-btn-large" style="background: #00e676; color: #000; text-decoration: none; padding: 8px 16px; font-size: 0.75rem;">
+          <i class="fas fa-phone"></i> Call 112
+        </a>
+        <button class="cancel-btn-large" id="wResetStandbyBtn" style="background: #252e3d; color: #fff; padding: 8px 16px; font-size: 0.75rem;">
+          Reset
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Drawer for On-Watch Testing -->
+    <div class="test-drawer" id="testDrawer">
+      <div class="drawer-handle" id="drawerHandle"></div>
+      <div style="font-size: 0.72rem; color: #8b99ad; text-align: center; margin-bottom: 2px;">
+        Watch Quick Controls
+      </div>
+      <button class="drawer-btn alert-test" id="triggerNightFearBtn">
+        🚨 Simulate Night Fear Spike (158 BPM)
+      </button>
+      <button class="drawer-btn" id="triggerWorkoutBtn">
+        🏃‍♀️ Simulate Workout (140 BPM - No Alarm)
+      </button>
+      <button class="drawer-btn" id="triggerNormalBtn">
+        🟢 Normal Resting (72 BPM)
+      </button>
+      <button class="drawer-btn" id="connectBleWatchBtn">
+        <i class="fab fa-bluetooth-b"></i> Connect Real Bluetooth HR Sensor
+      </button>
+    </div>
+
+  </div> <!-- End watch-face -->
+
+  <!-- Socket.io -->
+  <script src="/socket.io/socket.io.js"></script>
+  
+  <script>
+    // Register PWA Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then((reg) => {
+          console.log('[PWA] Service Worker registered successfully', reg.scope);
+        }).catch((err) => {
+          console.warn('[PWA] Service Worker registration failed', err);
+        });
+      });
+    }
+
+    // Smartwatch App State
+    const wState = {
+      bpm: 74,
+      hrv: 68,
+      surge: 0.2,
+      motion: 0,
+      fearIndex: 0.08,
+      isNight: true,
+      countdownActive: false,
+      countdownSecs: 10,
+      countdownTimer: null,
+      location: {
+        latitude: 28.6139,
+        longitude: 77.2090,
+        address: 'Barakhamba Road, Connaught Place, New Delhi'
+      }
+    };
+
+    // Socket.io
+    let socket = null;
+    try {
+      socket = io();
+      socket.on('connect', () => console.log('[Watch] Connected to 112 Gateway'));
+    } catch (e) {}
+
+    // Elements
+    const wClock = document.getElementById('wClock');
+    const wShieldPill = document.getElementById('wShieldPill');
+    const wBpmVal = document.getElementById('wBpmVal');
+    const wHeartIcon = document.getElementById('wHeartIcon');
+    const wStatusBadge = document.getElementById('wStatusBadge');
+    const wHrvVal = document.getElementById('wHrvVal');
+    const wFearVal = document.getElementById('wFearVal');
+    const wMotionVal = document.getElementById('wMotionVal');
+    const wCountdownModal = document.getElementById('wCountdownModal');
+    const wCountdownDigit = document.getElementById('wCountdownDigit');
+    const wCountdownRing = document.getElementById('wCountdownRing');
+    const wCancelBtn = document.getElementById('wCancelBtn');
+    const wDispatchedModal = document.getElementById('wDispatchedModal');
+    const wDispatchedPatrol = document.getElementById('wDispatchedPatrol');
+    const wResetStandbyBtn = document.getElementById('wResetStandbyBtn');
+    const testDrawer = document.getElementById('testDrawer');
+    const drawerHandle = document.getElementById('drawerHandle');
+    const tapVitalsArea = document.getElementById('tapVitalsArea');
+
+    // 24-hr Clock
+    function tickClock() {
+      const now = new Date();
+      const h = now.getHours();
+      const m = now.getMinutes();
+      const s = now.getSeconds();
+      wClock.innerText = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      
+      wState.isNight = (h >= 20 || h < 6);
+      if (wState.isNight) {
+        wShieldPill.className = 'shield-status-pill';
+        wShieldPill.innerHTML = '<i class="fas fa-moon"></i> <span>NIGHT SHIELD</span>';
+      } else {
+        wShieldPill.className = 'shield-status-pill day';
+        wShieldPill.innerHTML = '<i class="fas fa-sun"></i> <span>DAY SHIELD</span>';
+      }
+    }
+    setInterval(tickClock, 1000);
+    tickClock();
+
+    // ECG Canvas
+    const canvas = document.getElementById('watchEcgCanvas');
+    const ctx = canvas.getContext('2d');
+    let ecgPoints = new Array(80).fill(canvas.height / 2);
+    let phase = 0;
+
+    function renderEcg() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.beginPath();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = wState.fearIndex > 0.75 ? '#ff334b' : (wState.bpm > 120 ? '#ffb300' : '#00e676');
+
+      for (let i = 0; i < ecgPoints.length; i++) {
+        const x = (i / (ecgPoints.length - 1)) * canvas.width;
+        const y = ecgPoints[i];
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      phase = (phase + (wState.bpm / 60) * 0.15) % (Math.PI * 2);
+      let v = Math.sin(phase) * 2;
+      if (phase > 1.2 && phase < 1.45) v = -16;
+      else if (phase >= 1.45 && phase < 1.6) v = 6;
+
+      ecgPoints.shift();
+      ecgPoints.push((canvas.height / 2) + v);
+      requestAnimationFrame(renderEcg);
+    }
+    requestAnimationFrame(renderEcg);
+
+    // Evaluate Fear
+    function calcFear() {
+      const fTachy = Math.max(0, Math.min(1.0, (wState.bpm - 90) / 75));
+      const fSurge = Math.max(0, Math.min(1.0, wState.surge / 4.0));
+      const fHrv = Math.max(0, Math.min(1.0, (50 - wState.hrv) / 38));
+      let fMotion = wState.motion === 1 ? -0.50 : (wState.motion === 2 ? 0.35 : 0.05);
+
+      let score = (0.40 * fTachy) + (0.35 * fSurge) + (0.20 * fHrv) + fMotion;
+      score = Math.max(0.01, Math.min(0.99, score));
+      wState.fearIndex = parseFloat(score.toFixed(2));
+      wFearVal.innerText = wState.fearIndex;
+
+      if (wState.fearIndex >= 0.78) {
+        wStatusBadge.className = 'status-badge danger';
+        wStatusBadge.innerText = 'ACUTE FEAR SURGE';
+        wBpmVal.style.color = '#ff334b';
+        if (wState.isNight && !wState.countdownActive) {
+          triggerCountdown();
+        }
+      } else if (wState.fearIndex >= 0.45 || (wState.bpm > 115 && wState.motion === 1)) {
+        wStatusBadge.className = 'status-badge';
+        wStatusBadge.style.color = '#ffb300';
+        wStatusBadge.style.borderColor = '#ffb300';
+        wStatusBadge.innerText = wState.motion === 1 ? 'EXERCISE (CARDIO)' : 'ELEVATED';
+        wBpmVal.style.color = '#ffb300';
+      } else {
+        wStatusBadge.className = 'status-badge';
+        wStatusBadge.style.color = '#00e676';
+        wStatusBadge.style.borderColor = 'rgba(0,230,118,0.3)';
+        wStatusBadge.innerText = 'NORMAL VITAL';
+        wBpmVal.style.color = '#ffffff';
+      }
+
+      wHeartIcon.style.animationDuration = `${Math.max(0.35, 60 / wState.bpm)}s`;
+    }
+
+    // 10-Second Countdown
+    function triggerCountdown() {
+      if (wState.countdownActive) return;
+      wState.countdownActive = true;
+      wState.countdownSecs = 10;
+      wCountdownModal.classList.add('active');
+      wCountdownDigit.innerText = wState.countdownSecs;
+
+      if (navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 300]);
+
+      const circ = 2 * Math.PI * 50; // ~314
+
+      wState.countdownTimer = setInterval(() => {
+        wState.countdownSecs--;
+        wCountdownDigit.innerText = wState.countdownSecs;
+        wCountdownRing.style.strokeDashoffset = circ * (1 - wState.countdownSecs / 10);
+        if (navigator.vibrate) navigator.vibrate(100);
+
+        if (wState.countdownSecs <= 0) {
+          clearInterval(wState.countdownTimer);
+          wState.countdownActive = false;
+          wCountdownModal.classList.remove('active');
+          dispatch112Emergency();
+        }
+      }, 1000);
+    }
+
+    // Cancel Countdown
+    wCancelBtn.addEventListener('click', () => {
+      clearInterval(wState.countdownTimer);
+      wState.countdownActive = false;
+      wCountdownModal.classList.remove('active');
+      setVitals(72, 68, 0.2, 0);
+    });
+
+    // Final Dispatch
+    async function dispatch112Emergency() {
+      wDispatchedModal.classList.add('active');
+      speakVoice(`Emergency distress alert from RakshaPulse safety watch. Acute fear panic distress verified. Dispatching nearest 112 police unit immediately.`);
+
+      try {
+        const res = await fetch('/api/sos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            deviceId: 'WATCH-STANDALONE-7749',
+            userName: 'Ananya Sharma',
+            heartRate: wState.bpm,
+            hrv: wState.hrv,
+            fearIndex: wState.fearIndex,
+            triggerType: 'ACUTE_FEAR_TACHYCARDIA_NIGHT',
+            time24h: wClock.innerText,
+            isNightTime: true,
+            latitude: wState.location.latitude,
+            longitude: wState.location.longitude,
+            address: wState.location.address
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          wDispatchedPatrol.innerHTML = `<i class="fas fa-car-side"></i> ${data.assignedPatrol.callsign} (${data.estimatedEta})`;
+        }
+      } catch (e) {
+        wDispatchedPatrol.innerHTML = `<i class="fas fa-car-side"></i> PCR Van 14 Dispatched (2m)`;
+      }
+    }
+
+    function speakVoice(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 1.05;
+        u.pitch = 1.1;
+        window.speechSynthesis.speak(u);
+      }
+    }
+
+    wResetStandbyBtn.addEventListener('click', () => {
+      wDispatchedModal.classList.remove('active');
+      setVitals(72, 68, 0.2, 0);
+    });
+
+    function setVitals(bpm, hrv, surge, motion) {
+      wState.bpm = bpm;
+      wState.hrv = hrv;
+      wState.surge = surge;
+      wState.motion = motion;
+      wBpmVal.innerText = bpm;
+      wHrvVal.innerText = `${hrv} ms`;
+      wMotionVal.innerText = motion === 0 ? 'STILL' : (motion === 1 ? 'RUNNING' : 'STRUGGLE');
+      calcFear();
+    }
+
+    // Toggle drawer on tap
+    tapVitalsArea.addEventListener('click', () => {
+      testDrawer.classList.toggle('open');
+    });
+    drawerHandle.addEventListener('click', () => {
+      testDrawer.classList.toggle('open');
+    });
+
+    document.getElementById('triggerNightFearBtn').addEventListener('click', () => {
+      testDrawer.classList.remove('open');
+      setVitals(158, 12, 7.5, 2);
+    });
+
+    document.getElementById('triggerWorkoutBtn').addEventListener('click', () => {
+      testDrawer.classList.remove('open');
+      setVitals(140, 55, 0.8, 1);
+    });
+
+    document.getElementById('triggerNormalBtn').addEventListener('click', () => {
+      testDrawer.classList.remove('open');
+      setVitals(72, 68, 0.2, 0);
+    });
+
+    // Bluetooth HR
+    document.getElementById('connectBleWatchBtn').addEventListener('click', async () => {
+      try {
+        const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService('heart_rate');
+        const char = await service.getCharacteristic('heart_rate_measurement');
+        await char.startNotifications();
+        testDrawer.classList.remove('open');
+        char.addEventListener('characteristicvaluechanged', (e) => {
+          const v = e.target.value;
+          const hr = (v.getUint8(0) & 0x01) ? v.getUint16(1, true) : v.getUint8(1);
+          setVitals(hr, 45, 1.0, 0);
+        });
+      } catch (err) {
+        alert('Bluetooth error: ' + err.message);
+      }
+    });
+
+    // Real GPS
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((p) => {
+        wState.location.latitude = parseFloat(p.coords.latitude.toFixed(4));
+        wState.location.longitude = parseFloat(p.coords.longitude.toFixed(4));
+      });
+    }
+  </script>
+</body>
+</html>

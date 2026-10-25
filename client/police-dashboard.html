@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>112 ERSS Emergency Command & Police Dispatch Center - RakshaPulse</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    .dashboard-layout {
+      display: grid;
+      grid-template-columns: 1fr 480px;
+      gap: 20px;
+      padding: 20px;
+      flex: 1;
+      height: calc(100vh - 70px);
+    }
+
+    @media (max-width: 1024px) {
+      .dashboard-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+    }
+
+    #policeMap {
+      width: 100%;
+      height: 100%;
+      min-height: 480px;
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 25px rgba(0,0,0,0.4);
+      z-index: 1;
+    }
+
+    .police-side-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    .alert-banner {
+      background: linear-gradient(135deg, rgba(255, 42, 133, 0.25), rgba(255, 51, 75, 0.35));
+      border: 1px solid #ff334b;
+      border-radius: 12px;
+      padding: 16px;
+      animation: alert-glow 1.5s infinite alternate;
+    }
+
+    @keyframes alert-glow {
+      from { box-shadow: 0 0 10px rgba(255, 51, 75, 0.3); }
+      to { box-shadow: 0 0 25px rgba(255, 51, 75, 0.7); }
+    }
+
+    .victim-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+      font-size: 0.8rem;
+    }
+
+    .info-item {
+      background: rgba(255,255,255,0.03);
+      padding: 8px;
+      border-radius: 8px;
+    }
+
+    .info-label {
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      margin-bottom: 2px;
+    }
+
+    .info-val {
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .patrol-item {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s;
+    }
+
+    .patrol-item:hover {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.2);
+    }
+
+    .btn-dispatch {
+      background: #00e676;
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-dispatch:hover {
+      background: #00c853;
+      transform: scale(1.03);
+    }
+
+    /* Custom Leaflet Map Pins */
+    .pulse-marker {
+      width: 22px;
+      height: 22px;
+      background: #ff334b;
+      border: 3px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 15px #ff334b;
+      animation: pulse-ring 1.5s infinite;
+    }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(255, 51, 75, 0.7); }
+      70% { transform: scale(1.2); box-shadow: 0 0 0 18px rgba(255, 51, 75, 0); }
+      100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(255, 51, 75, 0); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="logo-container">
+      <div class="shield-badge" style="background: linear-gradient(135deg, #1e3c72, #2a5298); box-shadow: 0 0 16px rgba(42, 82, 152, 0.5);">
+        <i class="fas fa-tower-broadcast"></i>
+      </div>
+      <div class="logo-text">
+        <h1>112 ERSS Police Command & Dispatch Center</h1>
+        <p>National Emergency Response Support System - Automated Women Safety Radar</p>
+      </div>
+    </div>
+    <div class="nav-actions">
+      <div class="status-chip" style="background: rgba(33, 150, 243, 0.15); color: #64b5f6; border-color: rgba(33, 150, 243, 0.3);">
+        <i class="fas fa-radar"></i>
+        <span>PATROL RADAR ACTIVE (3 UNITS)</span>
+      </div>
+      <a href="index.html" class="btn-header btn-secondary">
+        <i class="fas fa-clock"></i>
+        <span>Switch to Smartwatch Screen</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Dashboard Layout -->
+  <div class="dashboard-layout">
+    
+    <!-- LEFT: Leaflet Radar Map -->
+    <div style="position: relative; display: flex; flex-direction: column;">
+      <div id="policeMap"></div>
+      
+      <!-- Map Legend Overlay -->
+      <div style="position: absolute; bottom: 20px; left: 20px; z-index: 1000; background: rgba(18, 22, 31, 0.9); padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border-color); font-size: 0.75rem; display: flex; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <div style="width: 12px; height: 12px; border-radius: 50%; background: #ff334b; box-shadow: 0 0 8px #ff334b;"></div>
+          <span>Victim SOS Distress Pin</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <i class="fas fa-car-side" style="color: #00f2fe; font-size: 14px;"></i>
+          <span>112 Patrolling PCR Vans</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <i class="fas fa-motorcycle" style="color: #ffb300; font-size: 14px;"></i>
+          <span>Rapid Response Interceptor</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Incident Dossier & Dispatch Controls -->
+    <div class="police-side-panel">
+      
+      <!-- Active Alert Banner -->
+      <div class="alert-banner" id="activeAlertBanner">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: 0.82rem; font-weight: 800; color: #ff334b; letter-spacing: 0.5px;">
+            <i class="fas fa-circle-exclamation"></i> HIGH-PRIORITY 112 DISTRESS BEACON
+          </span>
+          <span style="font-size: 0.72rem; background: #ff334b; color: #fff; padding: 2px 8px; border-radius: 6px; font-weight: 700;" id="incidentTimeBadge">23:42:18 IST</span>
+        </div>
+        <div style="font-size: 0.9rem; font-weight: 700; color: #fff; margin-bottom: 4px;" id="alertTitle">
+          Acute Fear Spike Detected by Wristwatch (158 BPM)
+        </div>
+        <div style="font-size: 0.76rem; color: #ffc4d3; line-height: 1.4;" id="alertSummary">
+          Physiological panic pattern validated during night danger window. Location broadcasted to PCR grid.
+        </div>
+        
+        <!-- Audio Broadcast Player -->
+        <div style="margin-top: 10px; background: rgba(0,0,0,0.4); border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--accent-cyan);">
+            <i class="fas fa-waveform-lines"></i>
+            <span>AI Voice Distress Audio</span>
+          </div>
+          <button id="playPoliceAudioBtn" style="background: var(--accent-cyan); color: #000; border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.72rem; font-weight: 700; cursor: pointer;">
+            <i class="fas fa-play"></i> Play Broadcast
+          </button>
+        </div>
+      </div>
+
+      <!-- Victim Profile Card -->
+      <div class="victim-card">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-user-shield" style="color: var(--accent-pink);"></i>
+            <span>Victim Identity & Telemetry</span>
+          </div>
+          <span style="font-size: 0.72rem; color: var(--accent-green); font-weight: 600;">VERIFIED WEARER</span>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">Name & Age</div>
+            <div class="info-val" id="victimName">Ananya Sharma (24 F)</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Blood Group / Medical</div>
+            <div class="info-val">B+ (No Known Allergies)</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Biometric Heart Rate</div>
+            <div class="info-val" style="color: #ff334b;" id="victimBpm">158 BPM (Critical Surge)</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">HRV / Fear Index</div>
+            <div class="info-val" id="victimFear">12 ms / 0.91 (Acute Terror)</div>
+          </div>
+          <div class="info-item" style="grid-column: span 2;">
+            <div class="info-label">Emergency Contacts Notified</div>
+            <div class="info-val" style="font-size: 0.75rem;">Mother (+91 98765 43210), Brother (+91 98765 43211)</div>
+          </div>
+          <div class="info-item" style="grid-column: span 2;">
+            <div class="info-label">Precise Location Coordinates</div>
+            <div class="info-val" id="victimCoords">28.6139° N, 77.2090° E (Connaught Place, New Delhi)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Patrolling PCR Units Card -->
+      <div class="victim-card">
+        <div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-car-side" style="color: var(--accent-cyan);"></i>
+            <span>Nearby Patrolling PCR Police Units</span>
+          </div>
+          <span style="font-size: 0.7rem; color: var(--text-muted);">Auto-sorted by ETA</span>
+        </div>
+
+        <div id="patrolUnitsList">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- 112 CAD Action Buttons -->
+      <div style="display: flex; gap: 10px;">
+        <button class="btn-primary" id="relayAllPcrBtn" style="background: linear-gradient(135deg, #1e3c72, #2a5298); box-shadow: 0 4px 15px rgba(30, 60, 114, 0.4);">
+          <i class="fas fa-broadcast-tower"></i> Broadcast to All Nearby PCR Units
+        </button>
+        <button class="btn-secondary" id="resolveIncidentBtn" style="font-size: 0.8rem;">
+          <i class="fas fa-check-double"></i> Mark Safe
+        </button>
+      </div>
+
+    </div> <!-- End police-side-panel -->
+
+  </div> <!-- End dashboard-layout -->
+
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Socket.io -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Police Dashboard JS -->
+  <script src="police-dashboard.js"></script>
+</body>
+</html>
